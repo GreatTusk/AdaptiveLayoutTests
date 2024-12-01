@@ -2,11 +2,13 @@ package com.f776.adaptivelayouttests
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -15,7 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuite
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldLayout
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
@@ -28,6 +29,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.window.core.layout.WindowHeightSizeClass
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.f776.adaptivelayouttests.ui.theme.AdaptiveLayoutTestsTheme
 
@@ -37,10 +39,19 @@ fun NavigationSuiteLayout(modifier: Modifier = Modifier) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     val adaptiveInfo = currentWindowAdaptiveInfo()
     val navigationSuiteType = with(adaptiveInfo) {
-        if (windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED) {
+        if (
+            windowPosture.isTabletop ||
+            windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.COMPACT
+        ) {
+            NavigationSuiteType.NavigationRail
+        } else if (
+            windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.MEDIUM
+        ) {
+            NavigationSuiteType.NavigationRail
+        } else if (windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED) {
             NavigationSuiteType.NavigationDrawer
         } else {
-            NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(adaptiveInfo)
+            NavigationSuiteType.NavigationBar
         }
     }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -52,6 +63,14 @@ fun NavigationSuiteLayout(modifier: Modifier = Modifier) {
                     railItems = AppDestinations.entries,
                     currentTab = currentDestination,
                     onTabClicked = { currentDestination = it }
+                )
+
+                NavigationSuiteType.NavigationRail -> RefriappNavigationRail(
+                    railItems = AppDestinations.entries,
+                    currentTab = currentDestination,
+                    onTabClicked = { currentDestination = it },
+                    onBackPressed = {},
+                    modifier = Modifier.displayCutoutPadding()
                 )
 
                 else -> NavigationSuite {
@@ -73,7 +92,6 @@ fun NavigationSuiteLayout(modifier: Modifier = Modifier) {
         },
         layoutType = navigationSuiteType
     ) {
-
         Scaffold(
             topBar = {
                 if (navigationSuiteType == NavigationSuiteType.NavigationBar) {
@@ -93,13 +111,14 @@ fun NavigationSuiteLayout(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun SampleLazyColumn(paddingValues: PaddingValues, location: String) {
-    val itemsList = List(11) { "$location Item #$it" }
+fun SampleLazyColumn(paddingValues: PaddingValues = PaddingValues(0.dp), location: String) {
+    val itemsList = List(22) { "$location Item #$it" }
 
-    LazyColumn(
+    LazyVerticalGrid(
         modifier = Modifier.fillMaxSize(),
         contentPadding = paddingValues,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        columns = GridCells.Adaptive(minSize = 200.dp)
     ) {
         items(itemsList) { item ->
             Card(
@@ -117,7 +136,11 @@ fun SampleLazyColumn(paddingValues: PaddingValues, location: String) {
 }
 
 @Preview(device = "spec:width=411dp,height=891dp", showBackground = true, showSystemUi = true)
-@Preview(device = "spec:width=891dp,height=411dp", showBackground = true, showSystemUi = true)
+@Preview(
+    device = "spec:width=411dp,height=891dp,orientation=landscape",
+    showBackground = true,
+    showSystemUi = true
+)
 @Preview(device = "spec:width=1280dp,height=800dp,dpi=240", showBackground = true)
 @Preview(device = "spec:width=673dp,height=841dp", showBackground = true)
 @Composable
